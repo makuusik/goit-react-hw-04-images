@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
@@ -7,43 +7,36 @@ import Modal from './Modal/Modal';
 import Loader from './Loader/Loader';
 import './styles.css';
 
-class App extends Component {
-  state = {
-    images: [],
-    query: '',
-    page: 1,
-    largeImageURL: '',
-    showModal: false,
-    isLoading: false,
-    noMoreImages: false,
-  };
+const App = () => {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [noMoreImages, setNoMoreImages] = useState(false);
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
+  const API_KEY = '38394863-d0bf61be8343901c1ba6a4493';
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
-
-    if (prevState.query !== query || prevState.page !== page) {
-      this.fetchImages();
+  useEffect(() => {
+    if (query !== '' || page !== 1) {
+      fetchImages();
     }
-  }
+  }, [query, page]);
 
-  fetchImages = () => {
-    const { query, page, isLoading, noMoreImages } = this.state;
-
+  const fetchImages = useCallback(() => {
     if (isLoading || noMoreImages) {
       return;
     }
 
-    const API_KEY = '38394863-d0bf61be8343901c1ba6a4493';
-
-    this.setState({ isLoading: true });
+    setIsLoading(true);
 
     axios
       .get(
@@ -51,70 +44,65 @@ class App extends Component {
       )
       .then(response => {
         if (response.data.hits.length === 0) {
-          this.setState({ noMoreImages: true });
+          setNoMoreImages(true);
         } else {
-          this.setState(prevState => ({
-            images: [...prevState.images, ...response.data.hits],
-            page: prevState.page + 1,
-          }));
+          setImages(prevImages => [...prevImages, ...response.data.hits]);
+          setPage(prevPage => prevPage + 1);
         }
       })
       .catch(error => console.error(error))
       .finally(() => {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
         window.scrollTo({
           top: document.documentElement.scrollHeight,
           behavior: 'smooth',
         });
       });
+  }, [isLoading, noMoreImages, query, page]);
+
+  const handleFormSubmit = newQuery => {
+    setQuery(newQuery);
+    setImages([]);
+    setPage(1);
+    setNoMoreImages(false);
   };
 
-  handleFormSubmit = query => {
-    this.setState({ query, images: [], page: 1, noMoreImages: false });
+  const handleImageClick = url => {
+    setLargeImageURL(url);
+    setShowModal(true);
   };
 
-  handleImageClick = largeImageURL => {
-    this.setState({ largeImageURL, showModal: true });
+  const handleCloseModal = () => {
+    setLargeImageURL('');
+    setShowModal(false);
   };
 
-  handleCloseModal = () => {
-    this.setState({ largeImageURL: '', showModal: false });
+  const handleLoadMore = () => {
+    fetchImages();
   };
 
-  handleLoadMore = () => {
-    this.fetchImages();
-  };
-
-  handleKeyDown = e => {
+  const handleKeyDown = e => {
     if (e.code === 'Escape') {
-      this.handleCloseModal();
+      handleCloseModal();
     }
   };
 
-  render() {
-    const { images, isLoading, showModal, largeImageURL, noMoreImages } =
-      this.state;
-
-    return (
-      <div className="App">
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {images.length > 0 && (
-          <ImageGallery images={images} onClick={this.handleImageClick} />
-        )}
-        {isLoading && <Loader />}
-        {images.length > 0 && !noMoreImages && (
-          <Button onClick={this.handleLoadMore} isVisible={!isLoading} />
-        )}
-        {showModal && (
-          <Modal
-            largeImageURL={largeImageURL}
-            onClose={this.handleCloseModal}
-          />
-        )}
-        {noMoreImages && <p>No more images found.</p>}
-      </div>
-    );
-  }
-}
+  return (
+    <div className="App">
+      <Searchbar onSubmit={handleFormSubmit} />
+      {images.length > 0 && (
+        <ImageGallery images={images} onClick={handleImageClick} />
+      )}
+      {isLoading && <Loader />}
+      {images.length > 0 && !noMoreImages && (
+        <Button onClick={handleLoadMore} isVisible={!isLoading} />
+      )}
+      {showModal && (
+        <Modal largeImageURL={largeImageURL} onClose={handleCloseModal} />
+      )}
+      {noMoreImages && <p>No more images found.</p>}
+    </div>
+  );
+};
 
 export default App;
