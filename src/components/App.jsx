@@ -16,26 +16,19 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [noMoreImages, setNoMoreImages] = useState(false);
 
-  const API_KEY = '38394863-d0bf61be8343901c1ba6a4493';
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (query && (page === 1 || page === 0)) {
-      fetchImages();
-    }
-  }, [query, page]);
+  const handleFormSubmit = query => {
+    setQuery(query);
+    setImages([]);
+    setPage(1);
+    setNoMoreImages(false);
+  };
 
   const fetchImages = useCallback(() => {
     if (isLoading || noMoreImages) {
       return;
     }
+
+    const API_KEY = '38394863-d0bf61be8343901c1ba6a4493';
 
     setIsLoading(true);
 
@@ -59,17 +52,16 @@ function App() {
           behavior: 'smooth',
         });
       });
-  }, [isLoading, noMoreImages, query, page]);
+  }, [isLoading, noMoreImages, page, query]);
 
-  const handleFormSubmit = newQuery => {
-    setQuery(newQuery);
-    setImages([]);
-    setPage(1);
-    setNoMoreImages(false);
-  };
+  useEffect(() => {
+    if (query && (page === 1 || page === 0)) {
+      fetchImages();
+    }
+  }, [query, page, fetchImages]);
 
-  const handleImageClick = newLargeImageURL => {
-    setLargeImageURL(newLargeImageURL);
+  const handleImageClick = largeImageURL => {
+    setLargeImageURL(largeImageURL);
     setShowModal(true);
   };
 
@@ -78,14 +70,22 @@ function App() {
     setShowModal(false);
   };
 
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.code === 'Escape') {
+        handleCloseModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const handleLoadMore = () => {
     fetchImages();
-  };
-
-  const handleKeyDown = e => {
-    if (e.code === 'Escape') {
-      handleCloseModal();
-    }
   };
 
   return (
