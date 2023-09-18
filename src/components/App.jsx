@@ -7,7 +7,7 @@ import Modal from './Modal/Modal';
 import Loader from './Loader/Loader';
 import './styles.css';
 
-const App = () => {
+function App() {
   const [images, setImages] = useState([]);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -20,13 +20,14 @@ const App = () => {
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
   useEffect(() => {
-    if (query !== '' || page !== 1) {
+    if (query && (page === 1 || page === 0)) {
       fetchImages();
     }
   }, [query, page]);
@@ -67,8 +68,8 @@ const App = () => {
     setNoMoreImages(false);
   };
 
-  const handleImageClick = url => {
-    setLargeImageURL(url);
+  const handleImageClick = newLargeImageURL => {
+    setLargeImageURL(newLargeImageURL);
     setShowModal(true);
   };
 
@@ -103,6 +104,6 @@ const App = () => {
       {noMoreImages && <p>No more images found.</p>}
     </div>
   );
-};
+}
 
 export default App;
